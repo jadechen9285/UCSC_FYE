@@ -1,0 +1,83 @@
+%FYE take home 2019 retake Q2 part (ii)
+% solve 1D Heat eqn with FTCS method.
+% then compare numerical results vs analytic soluntions
+% u_t = u_xx
+
+% Jianhong Chen
+% 09-20-2019
+
+clear all
+clc
+
+
+
+% allocate matrix-vector arrays
+u = zeros(Nx+2, Nt);
+
+% BC
+u(1, :) = 0;
+u(Nx+2, :) = 0;
+% IC
+u(2:17, 1) =f1(x(2:17));
+u(17:32,1) = f2(x(17:32));
+
+% BTCS method has the form 
+% u(n+1) = u(n) + r*(Ax*u(n+1)
+% due to zero BC, b-vector is zero in this case
+
+% contruct sparse matrix Ax 
+Ia=zeros(1,3*Nx);    % for storing row indices of non-zero entries
+Ja=zeros(1,3*Nx);    % for storing column indices of non-zero entries
+Sa=zeros(1,3*Nx);    % for storing values of non-zero entries
+for i=1:Nx
+  Ia(3*(i-1)+[1:3])=[i,i,i];
+  Ja(3*(i-1)+[1:3])=[i-1,i,i+1];
+  Sa(3*(i-1)+[1:3])=[1, -2, 1];
+end
+ind=find( (Ja>0)&(Ja<Nx+1) );
+Ax=sparse(Ia(ind),Ja(ind),Sa(ind),Nx,Nx);
+
+% rearrange BTCS into Ax = b form
+% (I-r*Ax)*u(n+1) = u(n)
+% thus A = (I - r*Ax)
+A = speye(Nx,Nx) - r*Ax;
+
+%  t_max is previously calculated
+t_max = 0.0166;
+T_save = [0.25, 0.5, 0.75, 1]*t_max;
+n_save = round(T_save/dt);
+
+% for n = 1:Nt % time-loop
+%     % only update internal points 
+%     % in this case it doesn't matter, becasue BC are zeros
+%     b = u(2:Nx+1,n);
+%     u(2:Nx+1,n+1) = GaussianElimination(A, b);
+% end
+
+load dat_heat_FTCS
+
+figure(1)
+hold on
+plot(x, u(:, n_save(1)), 'ro', 'linewidth',2)
+plot(x, u(:, n_save(2)), 'bs','linewidth',2)
+plot(x, u(:, n_save(3)), 'g+', 'linewidth',2)
+plot(x, u(:, n_save(4)), 'cx', 'linewidth',2)
+
+plot(x, u_ana(:,1), 'r-', 'linewidth',2)
+plot(x, u_ana(:,2), 'b-', 'linewidth',2)
+plot(x, u_ana(:,3), 'g-', 'linewidth',2)
+plot(x, u_ana(:,4), 'c-', 'linewidth',2)
+
+legend('num-t/tmax=0.25', 'num-t/tmax=0.5', ...
+    'num-t/tmax=0.75', 'num-t/tmax=1', ...
+    "ana-t/tmax = 0.25", "ana-t/tmax = 0.5", ...
+    "ana-t/tmax = 0.75", "ana-t/tmax = 1")
+xlabel("x")
+ylabel("u(x,t)")
+title("1D Heat with FTCS at Different Times $r = \frac{1}{2}$", ... 
+    'interpreter', 'latex')
+
+
+
+
+
